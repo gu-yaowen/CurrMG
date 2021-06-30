@@ -1,7 +1,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
+import os
+import pandas as pd
 from dgllife.model import load_pretrained
 from dgllife.utils import smiles_to_bigraph, EarlyStopping, Meter
 from functools import partial
@@ -10,7 +11,14 @@ from torch.utils.data import DataLoader
 from train_sampler import CurrSampler, CurrBatchSampler, Feat_Calculate
 from utils import collate_molgraphs, load_model, predict
 from load_data import load_data_from_dgl, cal_diff_feat
-from utils import init_featurizer, mkdir_p, split_dataset
+from utils import init_featurizer, mkdir_p, split_dataset, plot_train_method, plot_result
+
+
+def criterion(args):
+    if args['mode'] == 'classification':
+        return nn.BCEWithLogitsLoss(reduction='none')
+    elif args['mode'] == 'regression':
+        nn.SmoothL1Loss(reduction='none')
 
 
 def load_data(args, train_set, val_set, test_set,
@@ -39,10 +47,13 @@ def load_data(args, train_set, val_set, test_set,
     return train_loader, val_loader, test_loader
 
 
-def run_a_train_epoch(args, epoch, model, data_loader, loss_criterion, optimizer):
+def train_iteration_Curr(args, model, train_data_loader, val_data_loader,
+                         loss_criterion, optimizer):
     model.train()
-    train_meter = Meter()
-    for batch_id, batch_data in enumerate(data_loader):
+    best_model = model
+    best_score = 0 if args['metric'] in ['roc_auc_score', 'pr_auc_score', 'r2'] else 999
+    loss_list, val_list = [], []
+    for batch_id, batch_data in enumerate(train_data_loader):
         smiles, bg, labels, masks = batch_data
         if len(smiles) == 1:
             # Avoid potential issues with batch normalization
@@ -55,16 +66,67 @@ def run_a_train_epoch(args, epoch, model, data_loader, loss_criterion, optimizer
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        train_meter.update(prediction, labels, masks)
+        val_score, _ = eval_iteration(args, model, val_data_loader)
         if batch_id % args['print_every'] == 0:
-            print('epoch {:d}/{:d}, batch {:d}/{:d}, loss {:.4f}'.format(
-                epoch + 1, args['num_epochs'], batch_id + 1, len(data_loader), loss.item()))
-    train_score = np.mean(train_meter.compute_metric(args['metric']))
-    print('epoch {:d}/{:d}, training {} {:.4f}'.format(
-        epoch + 1, args['num_epochs'], args['metric'], train_score))
+            print('iteration {:d}/{:d}, batch {:d}/{:d}, loss {:.4f}, val_score {:.4f}'.format(
+                int(batch_id / args['print_every']), args['t_total'],
+                batch_id + 1, len(train_data_loader), loss.item(), val_score))
+        if args['metric'] in ['roc_auc_score', 'pr_auc_score', 'r2']:
+            if val_score > best_score:
+                best_model = model
+                best_score = val_score
+        else:
+            if val_score < best_score:
+                best_model = model
+                best_score = val_score
+        loss_list.append(loss)
+        val_list.append(val_score)
+    return best_model, best_score, loss_list, val_list
 
 
-def run_an_eval_epoch(args, model, data_loader):
+def train_iteration_noCurr(args, model, train_data_loader, val_data_loader,
+                           loss_criterion, optimizer):
+    model.train()
+    best_model = model
+    best_score = 0 if args['metric'] in ['roc_auc_score', 'pr_auc_score', 'r2'] else 999
+    iter_conut = 0
+    loss_list, val_list = [], []
+    for i in range(999):
+        for batch_id, batch_data in enumerate(train_data_loader):
+            smiles, bg, labels, masks = batch_data
+            if len(smiles) == 1:
+                # Avoid potential issues with batch normalization
+                continue
+
+            labels, masks = labels.to(args['device']), masks.to(args['device'])
+            prediction = predict(args, model, bg)
+            # Mask non-existing labels
+            loss = (loss_criterion(prediction, labels) * (masks != 0).float()).mean()
+            optimizer.zero_grad()
+            loss.backward()
+            val_score, _ = eval_iteration(args, model, val_data_loader)
+            if batch_id % args['print_every'] == 0:
+                print('iteration {:d}/{:d}, batch {:d}/{:d}, loss {:.4f}, val_score {:.4f}'.format(
+                    int(batch_id / args['print_every']), args['t_total'],
+                    batch_id + 1, len(train_data_loader), loss.item(), val_score))
+            if args['metric'] in ['roc_auc_score', 'pr_auc_score', 'r2']:
+                if val_score > best_score:
+                    best_model = model
+                    best_score = val_score
+            else:
+                if val_score < best_score:
+                    best_model = model
+                    best_score = val_score
+            iter_conut += 1
+            loss_list.append(loss)
+            val_list.append(val_score)
+        if iter_conut == args['t_total']:
+            break
+    return best_model, best_score, loss_list, val_list
+
+
+def eval_iteration(args, model, data_loader):
+    predict = []
     model.eval()
     eval_meter = Meter()
     with torch.no_grad():
@@ -72,8 +134,9 @@ def run_an_eval_epoch(args, model, data_loader):
             smiles, bg, labels, masks = batch_data
             labels = labels.to(args['device'])
             prediction = predict(args, model, bg)
+            predict.extend(prediction.numpy().tolist())
             eval_meter.update(prediction, labels, masks)
-    return np.mean(eval_meter.compute_metric(args['metric']))
+    return np.mean(eval_meter.compute_metric(args['metric'])), predict
 
 
 def train(args):
@@ -82,18 +145,36 @@ def train(args):
     else:
         args['device'] = torch.device('cpu')
 
-    if args['featurizer_type'] != 'pre_train':
-        exp_config['in_node_feats'] = args['node_featurizer'].feat_size()
-        if args['edge_featurizer'] is not None:
-            exp_config['in_edge_feats'] = args['edge_featurizer'].feat_size()
-    exp_config.update({
-        'n_tasks': args['n_tasks'],
-        'model': args['model']
-    })
-
     dataset = load_data_from_dgl(args)
+    args['n_tasks'] = dataset.n_tasks
     train_set, val_set, test_set = split_dataset(args, dataset)
-    diff_feat = cal_diff_feat(args, train_set)
+    if args['n_tasks'] == 1:
+        diff_feat = cal_diff_feat(args, train_set)
     args['t_total'] = int(100 * len(train_set) / args['batch_size'])
-    train_loader, val_loader, test_loader = load_data(args, train_set, val_set, test_set, diff_feat)
+    train_loader, val_loader, test_loader = load_data(args, train_set,
+                                                      val_set, test_set, diff_feat)
+    model = load_model().to(args['device'])
+    loss = criterion(args)
+    optimizer = Adam(model.parameters(), lr=exp_config['lr'],
+                     weight_decay=exp_config['weight_decay'])
+
+    if args['is_Curr']:
+        best_model, best_score, \
+        loss_list, val_list = train_iteration_Curr(args, model, train_loader,
+                                                   val_loader, loss, optimizer)
+    else:
+        best_model, best_score, \
+        loss_list, val_list = train_iteration_noCurr(args, model, train_loader,
+                                                     val_loader, loss, optimizer)
+
+    plot_train_method(args, loss_list, val_list, best_score)
+    test_score, test_result = eval_iteration(args, best_model, test_loader)
+    print('-' * 20 + '+' * 20 + '-' * 20)
+    print('val {} {:.4f}'.format(args['metric'], best_score))
+    print('test {} {:.4f}'.format(args['metric'], test_score))
+    label = test_set.labels.numpy().squeeze().tolist()
+    df = pd.DataFrame(np.array(np.array(test_set.smiles), label, test_result).T,
+                      columns=['SMILES', 'LABEL', 'PREDICT'])
+    df.to_csv(os.path.join(args['result_path'], 'result.csv'), index=False)
+    plot_result(args, label, test_result, test_score)
     return

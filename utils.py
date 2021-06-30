@@ -4,8 +4,9 @@ import json
 import os
 import torch
 import torch.nn.functional as F
-
+import matplotlib.pyplot as plt
 from dgllife.utils import ScaffoldSplitter, RandomSplitter
+from sklearn.metrics import roc_curve, auc
 
 
 def init_featurizer(args):
@@ -283,3 +284,41 @@ def predict(args, model, bg):
         node_feats = bg.ndata.pop('h').to(args['device'])
         edge_feats = bg.edata.pop('e').to(args['device'])
         return model(bg, node_feats, edge_feats)
+
+
+def plot_train_method(args, loss_list, val_list, best_score):
+    plt.subplot(121)
+    plt.plot(loss_list, label='Best loss = ' + str(min(loss_list)))
+    plt.legend()
+    plt.xlabel('Iterations')
+    plt.subplot(122, label='Best val_score = ' + str(best_score))
+    plt.plot(val_list)
+    plt.legend()
+    plt.xlabel('Iterations')
+    plt.subplots_adjust(wspace=0.3, hspace=0)
+    plt.suptitle('Train Loss And Validation Score in Training Period in ' + args['dataset'])
+    plt.savefig(os.path.join(args['result_path'], 'train_val.png'))
+    return
+
+
+def plot_result(args, label, predict, score):
+    if args['mode'] == 'classification':
+        fpr, tpr, threshold = roc_curve(label, predict)
+        roc_auc = auc(fpr, tpr)
+        plt.figure()
+        lw = 2
+        plt.figure(figsize=(10, 10))
+        plt.plot(fpr, tpr, color='darkorange',
+                 lw=lw, label='ROC curve (area = %0.4f)' % score)
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver operating characteristic example')
+        plt.legend()
+    else:
+        plt.plot([min(label), max(label)], [min(label), max(label)])
+        plt.scatter(predict, label, label='{} {:.4f}'.format(args['metric'], score))
+        plt.legend()
+    plt.savefig(os.path.join(args['result_path'], 'result.png'))

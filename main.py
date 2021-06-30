@@ -1,15 +1,5 @@
 from argparse import ArgumentParser
-import numpy as np
-import torch
-import torch.nn as nn
 from train import train
-from dgllife.model import load_pretrained
-from dgllife.utils import smiles_to_bigraph, EarlyStopping, Meter
-from functools import partial
-from torch.optim import Adam
-from torch.utils.data import DataLoader
-
-from utils import collate_molgraphs, load_model, predict
 
 
 def main_train():

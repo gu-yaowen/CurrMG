@@ -63,7 +63,11 @@ def load_data_from_dgl(args):
 
 
 def cal_diff_feat(args, dataset):
-    label = dataset.labels.numpy().squeeze()
+    label = dataset.labels.numpy().squeeze() if dataset.labels.numpy().shape[1] == 1 else dataset.labels.numpy()
+    if type(label[0]) == int:
+        args['mode'] = 'classification'
+    else:
+        args['mode'] = 'regression'
     smiles = dataset.smiles
     diff_feat = []
     if args['diff_type'] in ['LabelDistance', 'Combine_SWL', 'Combine_SWLD']:
