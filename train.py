@@ -12,6 +12,7 @@ from train_sampler import CurrSampler, CurrBatchSampler, Feat_Calculate
 from utils import collate_molgraphs, load_model, predict
 from load_data import load_data_from_dgl, cal_diff_feat
 from utils import init_featurizer, mkdir_p, split_dataset, plot_train_method, plot_result
+from model_config import set_model_config
 
 
 def criterion(args):
@@ -153,10 +154,12 @@ def train(args):
     args['t_total'] = int(100 * len(train_set) / args['batch_size'])
     train_loader, val_loader, test_loader = load_data(args, train_set,
                                                       val_set, test_set, diff_feat)
+    model_config = set_model_config(args)
+
     model = load_model().to(args['device'])
     loss = criterion(args)
-    optimizer = Adam(model.parameters(), lr=exp_config['lr'],
-                     weight_decay=exp_config['weight_decay'])
+    optimizer = Adam(model.parameters(), lr=model_config['lr'],
+                     weight_decay=model_config['weight_decay'])
 
     if args['is_Curr']:
         best_model, best_score, \
