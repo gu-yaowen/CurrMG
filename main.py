@@ -3,7 +3,7 @@ from train import train
 
 
 def main_train():
-    parser = ArgumentParser('Multi-label Binary Classification')
+    parser = ArgumentParser('Molecule Property Prediction')
     parser.add_argument('-d', '--dataset', choices=['BACE', 'BBBP', 'ClinTox', 'HIV', 'Tox21',
                                                     'FreeSolv', 'Lipophilicity', 'ESOL', 'External'],
                         help='Dataset to use')
@@ -45,10 +45,16 @@ def main_train():
                         default='AtomAndBond', help='Calculation method of molecular difficulty coefficient to use')
     parser.add_argument('-ct', '--c_type', type=int, default=3,
                         help='Power of competence function to use')
-    parser.add_argument('-st', '--sample_type', type=str, default='random',
+    parser.add_argument('-st', '--sample_type', type=str, default='Random',
                         choices=['random', 'padding-like'],
                         help='Way of sample type to generate a mini batch data')
+    parser.add_argument('-se', '--seed', type=int, default=0,
+                        help='Global random seed')
 
     args = parser.parse_args().__dict__
 
     train(args)
+
+
+if __name__ == '__main__':
+    main_train()

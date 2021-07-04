@@ -1,3 +1,4 @@
+
 def set_model_config(args):
     if args['model'] == 'gin_supervised_contextpred':
         config = {
@@ -8,7 +9,7 @@ def set_model_config(args):
             "readout": "max",
             "weight_decay": 0.001
         }
-    elif args['model'] == 'gcn':
+    elif args['model'] == 'GCN':
         config = {
             "batch_size": 128,
             "batchnorm": False,
@@ -21,7 +22,7 @@ def set_model_config(args):
             "residual": True,
             "weight_decay": 0.001
         }
-    elif args['model'] == 'gat':
+    elif args['model'] == 'GAT':
         config = {
             "alpha": 0.5,
             "batch_size": 512,

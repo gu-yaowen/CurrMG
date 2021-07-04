@@ -62,20 +62,23 @@ def load_data_from_dgl(args):
     return dataset
 
 
-def cal_diff_feat(args, dataset):
-    label = dataset.labels.numpy().squeeze() if dataset.labels.numpy().shape[1] == 1 else dataset.labels.numpy()
+def cal_diff_feat(args, train_smiles, train_labels):
+    label = train_labels
+    smiles = train_smiles
     if type(label[0]) == int:
         args['mode'] = 'classification'
     else:
         args['mode'] = 'regression'
-    smiles = dataset.smiles
     diff_feat = []
     if args['diff_type'] in ['LabelDistance', 'Combine_SWL', 'Combine_SWLD']:
         pred = pd.read_csv(args['external_path'])['PREDICT'].values
     else:
         pred = [None] * len(smiles)
+    print('Difficult Calculate Method: ', args['diff_type'])
     for idx in range(len(smiles)):
         diff = Feat_Calculate(smiles[idx], args['diff_type'], label[idx], pred[idx])
         if type(diff.diff_feat) == list:
             diff_feat.append(np.sum(np.array(diff.diff_feat) * np.array(args['weight'])))
+        else:
+            diff_feat.append(diff.diff_feat)
     return np.array(diff_feat)
