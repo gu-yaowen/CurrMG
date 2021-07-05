@@ -127,7 +127,7 @@ class Feat_Calculate:
         return abs(self.pred - self.label)
 
 
-def diff_metric_get(diff_count):
+def diff_metric_get(args, diff_count):
     """
     To get the difficulty metric of the difficulty metric
     Args:
@@ -139,7 +139,7 @@ def diff_metric_get(diff_count):
     if type(diff_count[0]) == list:
         diff_count = np.stack(diff_count)
         cdf = np.zeros(len(diff_count))
-        weight = [0.3, 0.2, 0.5]
+        weight = args['diff_weight'].split(' ')
         count = 0
         for diff in diff_count.T:
             cdf_ = np.array([len(np.where(diff < count)[0]) / len(diff) for count in diff])
@@ -166,11 +166,12 @@ class CurrSampler(Sampler):
     The sampler based on the CurrLearning.
     """
 
-    def __init__(self, diff_feat):
+    def __init__(self, args, diff_feat):
+        self.args = args
         self.diff_feat = diff_feat
 
     def __iter__(self):
-        self.indices, self.cdf_dis = diff_metric_get(self.diff_feat)
+        self.indices, self.cdf_dis = diff_metric_get(self.args, self.diff_feat)
         return iter([[self.indices, self.cdf_dis]])
 
     def __len__(self):
@@ -180,7 +181,7 @@ class CurrSampler(Sampler):
 class CurrBatchSampler(Sampler):
     r"""The batch sampler for the data sample"""
 
-    def __init__(self, sampler, batch_size, t_total, c_type, random_state, sample_type):
+    def __init__(self, sampler, batch_size, t_total, c_type, sample_type):
         """
 
         Args:
@@ -196,7 +197,6 @@ class CurrBatchSampler(Sampler):
         self.batch_size = batch_size
         self.t_total = t_total
         self.c_type = c_type
-        self.random_state = random_state
         self.sample_type = sample_type
 
     def __iter__(self):
@@ -205,7 +205,6 @@ class CurrBatchSampler(Sampler):
             self.cdf = np.array(sample[1])
         self.c0 = np.argpartition(self.cdf, self.batch_size - 1)[self.batch_size]
         sample_count = np.zeros(len(self.indices))
-        np.random.seed(self.random_state)
         for t in range(self.t_total):
             c = competence_func(t, self.t_total, self.c0, self.c_type)
             sample_pool = list(np.where(self.cdf <= c)[0])

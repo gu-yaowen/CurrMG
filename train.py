@@ -9,7 +9,8 @@ from torch.utils.data import DataLoader
 from train_sampler import CurrSampler, CurrBatchSampler
 from utils import collate_molgraphs, load_model, predict
 from load_data import load_data_from_dgl, cal_diff_feat
-from utils import init_featurizer, split_dataset, plot_train_method, plot_result
+from utils import init_featurizer, split_dataset, \
+    plot_train_method, plot_result, set_seed
 from model_config import set_model_config
 
 
@@ -24,9 +25,9 @@ def load_data(args, train_set, val_set, test_set,
               diff_feat: np.array):
     if args['is_Curr']:
         print('Training Method in Curriculum Learning')
-        sampler = CurrSampler(diff_feat)
+        sampler = CurrSampler(args, diff_feat)
         batch_sampler = CurrBatchSampler(sampler, args['batch_size'],
-                                         args['t_total'], args['c_type'], args['seed'],
+                                         args['t_total'], args['c_type'],
                                          args['sample_type'])
         train_loader = DataLoader(train_set,
                                   batch_sampler=batch_sampler,
@@ -77,7 +78,7 @@ def train_iteration_Curr(args, model, train_data_loader, val_data_loader,
             if val_score < best_score:
                 best_model = model
                 best_score = val_score
-        loss_list.append(loss.detach().numpy())
+        loss_list.append(loss.cpu().detach().numpy())
         val_list.append(val_score)
     return best_model, best_score, loss_list, val_list
 
@@ -90,6 +91,8 @@ def train_iteration_noCurr(args, model, train_data_loader, val_data_loader,
     iter_conut = 0
     loss_list, val_list = [], []
     for i in range(999):
+        if iter_conut == args['t_total']:
+            break
         for batch_id, batch_data in enumerate(train_data_loader):
             smiles, bg, labels, masks = batch_data
             if len(smiles) == 1:
@@ -115,10 +118,10 @@ def train_iteration_noCurr(args, model, train_data_loader, val_data_loader,
                     best_model = model
                     best_score = val_score
             iter_conut += 1
-            loss_list.append(loss.detach().numpy())
+            loss_list.append(loss.cpu().detach().numpy())
             val_list.append(val_score)
-        if iter_conut == args['t_total']:
-            break
+            if iter_conut == args['t_total']:
+                break
     return best_model, best_score, loss_list, val_list
 
 
@@ -131,7 +134,7 @@ def eval_iteration(args, model, data_loader):
             smiles, bg, labels, masks = batch_data
             labels = labels.to(args['device'])
             prediction = predict(args, model, bg)
-            predict_all.extend(prediction.numpy().tolist())
+            predict_all.extend(prediction.cpu().numpy().tolist())
             eval_meter.update(prediction, labels, masks)
     return np.mean(eval_meter.compute_metric(args['metric'])), predict_all
 
@@ -146,6 +149,7 @@ def train(args):
         os.mkdir(args['result_path'])
     except:
         pass
+    set_seed(args)
     args = init_featurizer(args)
     model_config = set_model_config(args)
     args.update(model_config)
@@ -160,7 +164,9 @@ def train(args):
     train_labels = dataset.labels.numpy().squeeze()[train_set.indices]
     if args['n_tasks'] == 1:
         diff_feat = cal_diff_feat(args, train_smiles, train_labels)
+    print(diff_feat[:3])
     args['t_total'] = int(100 * len(train_set) / args['batch_size'])
+    print('Total Iterations: ', args['t_total'])
     train_loader, val_loader, test_loader = load_data(args, train_set,
                                                       val_set, test_set, diff_feat)
     model = load_model(args).to(args['device'])

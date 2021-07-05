@@ -3,6 +3,8 @@ import errno
 import json
 import os
 import torch
+import random
+import numpy as np
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from dgllife.utils import ScaffoldSplitter, RandomSplitter
@@ -327,3 +329,11 @@ def plot_result(args, label, predict, score):
     plt.clf()
     return
 
+
+def set_seed(args):
+    seed = args['seed']
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    # torch.cuda.manual_seed(seed)
+    return

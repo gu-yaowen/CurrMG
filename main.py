@@ -32,7 +32,7 @@ def main_train():
                              'will be performed. (default: 100)')
     parser.add_argument('-nw', '--num-workers', type=int, default=0,
                         help='Number of processes for data loading (default: 0)')
-    parser.add_argument('-pe', '--print-every', type=int, default=20,
+    parser.add_argument('-pe', '--print-every', type=int, default=50,
                         help='Print the training progress every X mini-batches')
     parser.add_argument('-rp', '--result-path', type=str, default='results',
                         help='Path to save training results (default: results)')
@@ -43,7 +43,9 @@ def main_train():
     parser.add_argument('-dt', '--diff_type', type=str, choices=['AtomAndBond', 'MCE18', 'LabelDistance',
                                                                  'Combine_S', 'Combine_SWL', 'Combine_SWLD'],
                         default='AtomAndBond', help='Calculation method of molecular difficulty coefficient to use')
-    parser.add_argument('-ct', '--c_type', type=int, default=2,
+    parser.add_argument('-wt', '--diff_weight', type=str, default=None,
+                        help='Weight of each difficulty coefficient used(eg: "0.2 0.8" when choose Combine_S)')
+    parser.add_argument('-ct', '--c_type', type=int, default=3,
                         help='Power of competence function to use')
     parser.add_argument('-st', '--sample_type', type=str, default='Random',
                         choices=['Random', 'Padding-like'],
@@ -52,7 +54,7 @@ def main_train():
                         help='Global random seed')
 
     args = parser.parse_args().__dict__
-
+    print(args)
     train(args)
 
 
