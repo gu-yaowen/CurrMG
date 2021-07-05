@@ -46,7 +46,7 @@ def main_train():
     parser.add_argument('-ct', '--c_type', type=int, default=2,
                         help='Power of competence function to use')
     parser.add_argument('-st', '--sample_type', type=str, default='Random',
-                        choices=['random', 'padding-like'],
+                        choices=['Random', 'Padding-like'],
                         help='Way of sample type to generate a mini batch data')
     parser.add_argument('-se', '--seed', type=int, default=0,
                         help='Global random seed')
