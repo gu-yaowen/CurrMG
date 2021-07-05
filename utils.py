@@ -288,16 +288,17 @@ def predict(args, model, bg):
 
 def plot_train_method(args, loss_list, val_list, best_score):
     plt.subplot(121)
-    plt.plot(loss_list, label='Best loss = ' + str(min(loss_list)))
+    plt.plot(loss_list, label='Best loss = {:.4f}'.format(min(loss_list)))
     plt.legend()
     plt.xlabel('Iterations')
-    plt.subplot(122, label='Best val_score = ' + str(best_score))
-    plt.plot(val_list)
+    plt.subplot(122)
+    plt.plot(val_list, label='Best val_score = {:.4f}'.format(best_score))
     plt.legend()
     plt.xlabel('Iterations')
     plt.subplots_adjust(wspace=0.3, hspace=0)
     plt.suptitle('Train Loss And Validation Score in Training Period in ' + args['dataset'])
     plt.savefig(os.path.join(args['result_path'], 'train_val.png'))
+    plt.clf()
     return
 
 
@@ -322,3 +323,6 @@ def plot_result(args, label, predict, score):
         plt.scatter(predict, label, label='{} {:.4f}'.format(args['metric'], score))
         plt.legend()
     plt.savefig(os.path.join(args['result_path'], 'result.png'))
+    plt.clf()
+    return
+

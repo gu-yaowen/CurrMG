@@ -67,9 +67,8 @@ def train_iteration_Curr(args, model, train_data_loader, val_data_loader,
         optimizer.step()
         val_score, _ = eval_iteration(args, model, val_data_loader)
         if batch_id % args['print_every'] == 0:
-            print('iteration {:d}/{:d}, batch {:d}/{:d}, loss {:.4f}, val_score {:.4f}'.format(
-                int(batch_id / args['print_every']), args['t_total'],
-                batch_id + 1, len(train_data_loader), loss.item(), val_score))
+            print('iteration {:d}/{:d}, loss {:.4f}, val_score {:.4f}'.format(
+                batch_id, args['t_total'], loss.item(), val_score))
         if args['metric'] in ['roc_auc_score', 'pr_auc_score', 'r2']:
             if val_score > best_score:
                 best_model = model
@@ -102,11 +101,11 @@ def train_iteration_noCurr(args, model, train_data_loader, val_data_loader,
             loss = (loss_criterion(prediction, labels) * (masks != 0).float()).mean()
             optimizer.zero_grad()
             loss.backward()
+            optimizer.step()
             val_score, _ = eval_iteration(args, model, val_data_loader)
-            if batch_id % args['print_every'] == 0:
-                print('iteration {:d}/{:d}, batch {:d}/{:d}, loss {:.4f}, val_score {:.4f}'.format(
-                    int(batch_id / args['print_every']), args['t_total'],
-                    batch_id + 1, len(train_data_loader), loss.item(), val_score))
+            if iter_conut % args['print_every'] == 0:
+                print('iteration {:d}/{:d}, loss {:.4f}, val_score {:.4f}'.format(
+                    iter_conut, args['t_total'], loss.item(), val_score))
             if args['metric'] in ['roc_auc_score', 'pr_auc_score', 'r2']:
                 if val_score > best_score:
                     best_model = model

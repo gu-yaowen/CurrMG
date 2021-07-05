@@ -43,7 +43,7 @@ def main_train():
     parser.add_argument('-dt', '--diff_type', type=str, choices=['AtomAndBond', 'MCE18', 'LabelDistance',
                                                                  'Combine_S', 'Combine_SWL', 'Combine_SWLD'],
                         default='AtomAndBond', help='Calculation method of molecular difficulty coefficient to use')
-    parser.add_argument('-ct', '--c_type', type=int, default=3,
+    parser.add_argument('-ct', '--c_type', type=int, default=2,
                         help='Power of competence function to use')
     parser.add_argument('-st', '--sample_type', type=str, default='Random',
                         choices=['random', 'padding-like'],
