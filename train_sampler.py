@@ -203,7 +203,7 @@ class CurrBatchSampler(Sampler):
         for sample in self.sampler:
             self.indices = np.array(sample[0])
             self.cdf = np.array(sample[1])
-        self.c0 = np.argpartition(self.cdf, self.batch_size - 1)[self.batch_size]
+        self.c0 = self.cdf[np.argpartition(self.cdf, self.batch_size - 1)[self.batch_size]]
         sample_count = np.zeros(len(self.indices))
         for t in range(self.t_total):
             c = competence_func(t, self.t_total, self.c0, self.c_type)

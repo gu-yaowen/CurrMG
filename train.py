@@ -164,7 +164,6 @@ def train(args):
     train_labels = dataset.labels.numpy().squeeze()[train_set.indices]
     if args['n_tasks'] == 1:
         diff_feat = cal_diff_feat(args, train_smiles, train_labels)
-    print(diff_feat[:3])
     args['t_total'] = int(100 * len(train_set) / args['batch_size'])
     print('Total Iterations: ', args['t_total'])
     train_loader, val_loader, test_loader = load_data(args, train_set,

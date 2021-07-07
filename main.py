@@ -9,7 +9,7 @@ def main_train():
                         help='Dataset to use')
     parser.add_argument('-ep', '--external_path', default=None, type=str,
                         help='External dataset path (default: None)')
-    parser.add_argument('-mo', '--model', choices=['GCN', 'GAT', 'Weave', 'MPNN', 'AttentiveFP',
+    parser.add_argument('-mo', '--model', choices=['GCN', 'GAT', 'MPNN', 'AttentiveFP',
                                                    'gin_supervised_contextpred'],
                         help='Model to use')
     parser.add_argument('-f', '--featurizer-type', choices=['canonical', 'attentivefp'], default='canonical',
@@ -45,7 +45,7 @@ def main_train():
                         default='AtomAndBond', help='Calculation method of molecular difficulty coefficient to use')
     parser.add_argument('-wt', '--diff_weight', type=str, default=None,
                         help='Weight of each difficulty coefficient used(eg: "0.2 0.8" when choose Combine_S)')
-    parser.add_argument('-ct', '--c_type', type=int, default=3,
+    parser.add_argument('-ct', '--c_type', type=int, default=4,
                         help='Power of competence function to use')
     parser.add_argument('-st', '--sample_type', type=str, default='Random',
                         choices=['Random', 'Padding-like'],
