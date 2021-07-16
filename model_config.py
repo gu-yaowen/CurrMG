@@ -2,7 +2,7 @@
 def set_model_config(args):
     if args['model'] == 'gin_supervised_contextpred':
         config = {
-            "batch_size": 256,
+            "batch_size": 128,
             "jk": "concat",
             "lr": 0.001,
             "patience": 30,
@@ -25,7 +25,7 @@ def set_model_config(args):
     elif args['model'] == 'GAT':
         config = {
             "alpha": 0.5,
-            "batch_size": 512,
+            "batch_size": 128,
             "dropout": 0.05,
             "gnn_hidden_feats": 128,
             "lr": 0.01,

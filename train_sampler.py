@@ -203,7 +203,7 @@ class CurrBatchSampler(Sampler):
         for sample in self.sampler:
             self.indices = np.array(sample[0])
             self.cdf = np.array(sample[1])
-        self.c0 = np.argpartition(self.cdf, self.batch_size - 1)[self.batch_size]
+        self.c0 = self.cdf[np.argpartition(self.cdf, self.batch_size - 1)[self.batch_size]]
         sample_count = np.zeros(len(self.indices))
         for t in range(self.t_total):
             c = competence_func(t, self.t_total, self.c0, self.c_type)
@@ -211,8 +211,10 @@ class CurrBatchSampler(Sampler):
             if self.sample_type == 'Random':
                 sample_all = np.random.choice(sample_pool, size=self.batch_size, replace=False)
             elif self.sample_type == 'Padding-like':
-                sample_all = np.argpartition(sample_count[sample_pool],
-                                             self.batch_size - 1)[:self.batch_size]
+                sample_all_1 = np.argpartition(sample_count[sample_pool],
+                                               self.batch_size - 1)[:int(self.batch_size * 0.8)]
+                sample_all_2 = np.random.choice(sample_pool, size=int(self.batch_size * 0.2), replace=False)
+                sample_all = np.hstack((sample_all_1, sample_all_2))
                 sample_count[sample_all] += 1
             # print(len(sample_pool))
             yield sample_all.tolist()

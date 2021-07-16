@@ -78,6 +78,8 @@ def cal_diff_feat(args, train_smiles, train_labels):
     label = train_labels
     smiles = train_smiles
     diff_feat = []
+    if args['diff_weight']:
+        args['diff_weight'] = [float(i) for i in args['diff_weight'].split(' ')]
     if args['diff_type'] in ['LabelDistance', 'Combine_SWL', 'Combine_SWLD']:
         pred = pd.read_csv(args['external_path'])['PREDICT'].values
     else:
@@ -86,7 +88,7 @@ def cal_diff_feat(args, train_smiles, train_labels):
     for idx in range(len(smiles)):
         diff = Feat_Calculate(smiles[idx], args['diff_type'], label[idx], pred[idx])
         if type(diff.diff_feat) == list:
-            diff_feat.append(np.sum(np.array(diff.diff_feat) * np.array(args['weight'])))
+            diff_feat.append(np.sum(np.array(diff.diff_feat) * np.array(args['diff_weight'])))
         else:
             diff_feat.append(diff.diff_feat)
     return np.array(diff_feat)

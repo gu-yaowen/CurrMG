@@ -40,8 +40,9 @@ def main_train():
                         help='Path to save training results (default: results)')
     parser.add_argument('-cu', '--is_Curr', type=eval, default=True,
                         help='Choose whether to use curriculum learning in training period')
-    parser.add_argument('-dt', '--diff_type', type=str, choices=['AtomAndBond', 'MCE18', 'LabelDistance',
-                                                                 'Combine_S', 'Combine_SWL', 'Combine_SWLD'],
+    parser.add_argument('-dt', '--diff_type', type=str, choices=['AtomAndBond', 'Fsp3Ring', 'MCE18',
+                                                                 'LabelDistance', 'Combine_S',
+                                                                 'Combine_SWL', 'Combine_SWLD'],
                         default='AtomAndBond', help='Calculation method of molecular difficulty coefficient to use')
     parser.add_argument('-wt', '--diff_weight', type=str, default=None,
                         help='Weight of each difficulty coefficient used(eg: "0.2 0.8" when choose Combine_S)')

@@ -292,11 +292,11 @@ def predict(args, model, bg):
 def plot_train_method(args, loss_list, val_list, best_score):
     plt.subplot(121)
     plt.plot(loss_list, label='Best loss = {:.4f}'.format(min(loss_list)))
-    plt.legend()
+    plt.legend(loc='upper right')
     plt.xlabel('Iterations')
     plt.subplot(122)
     plt.plot(val_list, label='Best val_score = {:.4f}'.format(best_score))
-    plt.legend()
+    plt.legend(loc='upper right')
     plt.xlabel('Iterations')
     plt.subplots_adjust(wspace=0.3, hspace=0)
     plt.suptitle('Train Loss And Validation Score in Training Period in ' + args['dataset'])
@@ -320,11 +320,11 @@ def plot_result(args, label, predict, score):
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
         plt.title('Receiver operating characteristic example')
-        plt.legend()
+        plt.legend(loc='lower right')
     else:
         plt.plot([min(label), max(label)], [min(label), max(label)])
         plt.scatter(predict, label, label='{} {:.4f}'.format(args['metric'], score))
-        plt.legend()
+        plt.legend(loc='lower right')
     plt.savefig(os.path.join(args['result_path'], 'result.png'))
     plt.clf()
     return

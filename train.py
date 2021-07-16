@@ -67,6 +67,7 @@ def train_iteration_Curr(args, model, train_data_loader, val_data_loader,
         loss.backward()
         optimizer.step()
         val_score, _ = eval_iteration(args, model, val_data_loader)
+        model.train()
         if batch_id % args['print_every'] == 0:
             print('iteration {:d}/{:d}, loss {:.4f}, val_score {:.4f}'.format(
                 batch_id, args['t_total'], loss.item(), val_score))
@@ -106,6 +107,7 @@ def train_iteration_noCurr(args, model, train_data_loader, val_data_loader,
             loss.backward()
             optimizer.step()
             val_score, _ = eval_iteration(args, model, val_data_loader)
+            model.train()
             if iter_conut % args['print_every'] == 0:
                 print('iteration {:d}/{:d}, loss {:.4f}, val_score {:.4f}'.format(
                     iter_conut, args['t_total'], loss.item(), val_score))
@@ -134,8 +136,9 @@ def eval_iteration(args, model, data_loader):
             smiles, bg, labels, masks = batch_data
             labels = labels.to(args['device'])
             prediction = predict(args, model, bg)
-            predict_all.extend(prediction.cpu().numpy().tolist())
+            predict_all.extend(prediction.cpu().numpy().squeeze().tolist())
             eval_meter.update(prediction, labels, masks)
+
     return np.mean(eval_meter.compute_metric(args['metric'])), predict_all
 
 
@@ -164,7 +167,6 @@ def train(args):
     train_labels = dataset.labels.numpy().squeeze()[train_set.indices]
     if args['n_tasks'] == 1:
         diff_feat = cal_diff_feat(args, train_smiles, train_labels)
-    print(diff_feat[:3])
     args['t_total'] = int(100 * len(train_set) / args['batch_size'])
     print('Total Iterations: ', args['t_total'])
     train_loader, val_loader, test_loader = load_data(args, train_set,
@@ -196,4 +198,9 @@ def train(args):
                       columns=['SMILES', 'LABEL', 'PREDICT'])
     df.to_csv(os.path.join(args['result_path'], 'result.csv'), index=False)
     plot_result(args, label, test_result, test_score)
+    df = pd.DataFrame(np.array([loss_list, val_list]).T,
+                      columns=['Train Loss', 'Validation Loss'])
+    df.to_csv(os.path.join(args['result_path'], 'loss.csv'), index=False)
+    with open(os.path.join(args['result_path'], '{:.4f}'.format(test_score) + '.txt'), 'w') as file:
+        file.write(str(test_score))
     return
