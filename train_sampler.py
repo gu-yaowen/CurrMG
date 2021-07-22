@@ -1,3 +1,4 @@
+import random
 import numpy as np
 from torch.utils.data import Sampler
 from rdkit import Chem
@@ -45,14 +46,18 @@ class Feat_Calculate:
             self.label = label
             self.pred = pred
             self.diff_feat = self.calculate_LabelDistance()
+        elif self.curr_option == 'Combine_S':
+            self.diff_feat = [self.calculate_atom_and_bond(),
+                              self.calculate_MCE18()]
+        elif self.curr_option == 'Combine_Structure':
+            self.diff_feat = [self.calculate_atom_and_bond(),
+                              self.calculate_MCE18(),
+                              self.calculate_fsp3ring()]
         elif self.curr_option == 'Combine_SWL':
             self.label = label
             self.pred = pred
             self.diff_feat = [self.calculate_atom_and_bond(),
                               self.calculate_MCE18(), self.calculate_LabelDistance()]
-        elif self.curr_option == 'Combine_S':
-            self.diff_feat = [self.calculate_atom_and_bond(),
-                              self.calculate_MCE18()]
         elif self.curr_option == 'Combine_SWLD':
             self.label = label
             self.pred = pred
@@ -61,6 +66,8 @@ class Feat_Calculate:
                               self.calculate_LabelDistance()]
         elif self.curr_option == 'None':
             self.diff_feat = []
+        elif self.curr_option == 'Ablation':
+            self.diff_feat = random.random()
         else:
             self.diff_feat = None
 
@@ -144,6 +151,11 @@ def diff_metric_get(args, diff_count):
         for diff in diff_count.T:
             cdf_ = np.array([len(np.where(diff < count)[0]) / len(diff) for count in diff])
             cdf += cdf_ * weight[count]
+
+            # for ablation study to use
+            # cdf_ = (diff - diff_count.min()) / (diff_count.max() - diff_count.min())
+            # cdf += cdf_ * weight[count]
+
             count += 1
         sort = cdf.argsort()
     else:
@@ -151,6 +163,11 @@ def diff_metric_get(args, diff_count):
         # diff_count = diff_count[diff_count.argsort()]
         cdf = np.array([len(np.where(diff_count < count)[0]) /
                         len(diff_count) for count in diff_count])
+
+        # for ablation study to use
+        # cdf = np.array([(count - diff_count.min())
+        #                 / (diff_count.max() - diff_count.min())
+        #                 for count in diff_count])
     return sort, cdf
 
 
@@ -204,6 +221,10 @@ class CurrBatchSampler(Sampler):
             self.indices = np.array(sample[0])
             self.cdf = np.array(sample[1])
         self.c0 = self.cdf[np.argpartition(self.cdf, self.batch_size - 1)[self.batch_size]]
+
+        # for ablation study to use
+        # self.c0 = 1
+
         sample_count = np.zeros(len(self.indices))
         for t in range(self.t_total):
             c = competence_func(t, self.t_total, self.c0, self.c_type)

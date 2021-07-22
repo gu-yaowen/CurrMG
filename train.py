@@ -136,7 +136,10 @@ def eval_iteration(args, model, data_loader):
             smiles, bg, labels, masks = batch_data
             labels = labels.to(args['device'])
             prediction = predict(args, model, bg)
-            predict_all.extend(prediction.cpu().numpy().squeeze().tolist())
+            try:
+                predict_all.extend(prediction.cpu().numpy().squeeze().tolist())
+            except:
+                predict_all.extend(prediction.cpu().numpy().tolist())
             eval_meter.update(prediction, labels, masks)
 
     return np.mean(eval_meter.compute_metric(args['metric'])), predict_all
