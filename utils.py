@@ -5,6 +5,7 @@ import os
 import torch
 import random
 import numpy as np
+import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from dgllife.utils import ScaffoldSplitter, RandomSplitter
@@ -95,7 +96,8 @@ def split_dataset(args, dataset):
             scaffold_func='smiles')
     elif args['split'] == 'random':
         train_set, val_set, test_set = RandomSplitter.train_val_test_split(
-            dataset, frac_train=train_ratio, frac_val=val_ratio, frac_test=test_ratio,
+            dataset, frac_train=train_ratio*args['ratio'], frac_val=val_ratio,
+            frac_test=test_ratio+train_ratio*(1-args['ratio']),
             random_state=args['seed'])
     else:
         return ValueError("Expect the splitting method to be 'scaffold', got {}".format(args['split']))
@@ -289,17 +291,25 @@ def predict(args, model, bg):
         return model(bg, node_feats, edge_feats)
 
 
-def plot_train_method(args, loss_list, val_list, best_score):
+def plot_train_method(args, loss_list, val_list):
+    plt.figure(figsize=(12, 4))
+    if args['metric'] in ['roc_auc_score', 'pr_auc_score', 'r2']:
+        val_best = max(val_list)
+    else:
+        val_best = min(val_list)
     plt.subplot(121)
     plt.plot(loss_list, label='Best loss = {:.4f}'.format(min(loss_list)))
     plt.legend(loc='upper right')
     plt.xlabel('Iterations')
     plt.subplot(122)
-    plt.plot(val_list, label='Best val_score = {:.4f}'.format(best_score))
+    plt.plot(val_list, label='Best val_score = {:.4f}'.format(val_best))
+    plt.plot([val_best for i in val_list], linestyle='--')
+    plt.legend(loc='upper right')
+    plt.xlabel('Iterations')
     plt.legend(loc='upper right')
     plt.xlabel('Iterations')
     plt.subplots_adjust(wspace=0.3, hspace=0)
-    plt.suptitle('Train Loss And Validation Score in Training Period in ' + args['dataset'])
+    plt.suptitle('Train Loss, Validation Score And Test Score in Training Period in ' + args['dataset'])
     plt.savefig(os.path.join(args['result_path'], 'train_val.png'))
     plt.clf()
     return
@@ -335,5 +345,23 @@ def set_seed(args):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    # torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
     return
+
+
+def criterion(args):
+    if args['mode'] == 'classification':
+        return nn.BCEWithLogitsLoss(reduction='none')
+    elif args['mode'] == 'regression':
+        return nn.SmoothL1Loss(reduction='none')
+
+
+def config_update(args, model_config):
+    if args['learning_rate']:
+        model_config['lr'] = args['learning_rate']
+    if args['batch_size']:
+        model_config['batch_size'] = args['batch_size']
+    if args['weight_decay']:
+        model_config['weight_decay'] = args['weight_decay']
+    args.update(model_config)
+    return args

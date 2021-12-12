@@ -1,3 +1,6 @@
+import json
+import os
+
 
 def set_model_config(args):
     if args['model'] == 'gin_supervised_contextpred':
@@ -6,7 +9,7 @@ def set_model_config(args):
             "jk": "concat",
             "lr": 0.001,
             "patience": 30,
-            "readout": "max",
+            "readout": "sum",
             "weight_decay": 0.001
         }
     elif args['model'] == 'GCN':
@@ -59,4 +62,144 @@ def set_model_config(args):
             "patience": 30,
             "weight_decay": 0.001
         }
+    return config
+
+
+def GCN_config(args, config):
+    if args['dataset'] == 'FreeSolv':
+        config['lr'] = 0.001
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'ESOL':
+        config['lr'] = 0.001
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'Lipophilicity':
+        config['lr'] = 0.001
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'BBBP':
+        config['lr'] = 0.001
+        config['batch_size'] = 256
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'BACE':
+        config['lr'] = 0.001
+        config['batch_size'] = 256
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'HIV':
+        config['lr'] = 0.004
+        config['batch_size'] = config['batch_size']
+        config['weight_decay'] = config['weight_decay']
+    return config
+
+
+def GAT_config(args, config):
+    if args['dataset'] == 'FreeSolv':
+        config['lr'] = 0.001
+        config['batch_size'] = 256
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'ESOL':
+        config['lr'] = 0.001
+        config['batch_size'] = 256
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'Lipophilicity':
+        config['lr'] = 0.0005
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'BBBP':
+        config['lr'] = 0.0005
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'BACE':
+        config['lr'] = 0.001
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'HIV':
+        config['lr'] = 0.004
+        config['batch_size'] = config['batch_size']
+        config['weight_decay'] = config['weight_decay']
+    return config
+
+
+def MPNN_config(args, config):
+    if args['dataset'] == 'FreeSolv':
+        config['lr'] = 0.005
+        config['batch_size'] = 128
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'ESOL':
+        config['lr'] = 0.001
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'Lipophilicity':
+        config['lr'] = 0.001
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'BBBP':
+        config['lr'] = 0.005
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'BACE':
+        config['lr'] = 0.0005
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'HIV':
+        config['lr'] = config['batch_size']
+        config['batch_size'] = config['batch_size']
+        config['weight_decay'] = config['weight_decay']
+    return config
+
+
+def AttentiveFP_config(args, config):
+    if args['dataset'] == 'FreeSolv':
+        config['lr'] = 0.01
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'ESOL':
+        config['lr'] = 0.005
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'Lipophilicity':
+        config['lr'] = 0.005
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'BBBP':
+        config['lr'] = 0.005
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'BACE':
+        config['lr'] = 0.005
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'HIV':
+        config['lr'] = config['batch_size']
+        config['batch_size'] = config['batch_size']
+        config['weight_decay'] = config['weight_decay']
+    return config
+
+
+def Pretrained_GIN_config(args, config):
+    if args['dataset'] == 'FreeSolv':
+        config['lr'] = 0.001
+        config['batch_size'] = 256
+        config['weight_decay'] = 0.001
+    elif args['dataset'] == 'ESOL':
+        config['lr'] = 0.0005
+        config['batch_size'] = 256
+        config['weight_decay'] = 0.001
+    elif args['dataset'] == 'Lipophilicity':
+        config['lr'] = 0.0005
+        config['batch_size'] = 128
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'BBBP':
+        config['lr'] = 0.0005
+        config['batch_size'] = 64
+        config['weight_decay'] = 0.0005
+    elif args['dataset'] == 'BACE':
+        config['lr'] = 0.001
+        config['batch_size'] = 128
+        config['weight_decay'] = 0.0
+    elif args['dataset'] == 'HIV':
+        config['lr'] = config['batch_size']
+        config['batch_size'] = config['batch_size']
+        config['weight_decay'] = config['weight_decay']
     return config
