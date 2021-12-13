@@ -104,7 +104,7 @@ class Feat_Calculate:
             self.diff_feat = [self.calculate_atom_and_bond(),
                               self.calculate_sp3idx(),
                               self.calculate_MCE18()]
-        elif self.curr_option in ['Combine_S_L', 'Two_Stage']:
+        elif self.curr_option in ['Joint', 'Two_Stage']:
             self.diff_feat = [self.calculate_atom_and_bond(),
                               self.calculate_sp3idx(),
                               self.calculate_MCE18(),
@@ -208,7 +208,7 @@ def diff_metric_get(args, diff_count):
     Returns:
 
     """
-    if args['diff_type'] == 'Combine_S_L':
+    if args['diff_type'] == 'Joint':
         diff_count = np.stack(diff_count)
         cdf = []
         weight = args['diff_weight']

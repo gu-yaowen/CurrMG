@@ -46,11 +46,11 @@ def main_train():
                         help='Choose whether to use curriculum learning in training period')
     parser.add_argument('-dt', '--diff_type', type=str, choices=['AtomAndBond', 'Fsp3', 'MCE18',
                                                                  'LabelDistance',
-                                                                 'Combine_S_L', 'Two_Stage',
+                                                                 'Joint', 'Two_Stage',
                                                                  'Ablation'],
                         default='AtomAndBond', help='Calculation method of molecular difficulty coefficient to use')
     parser.add_argument('-wt', '--diff_weight', type=float, default=0.6,
-                        help='Weight of each difficulty coefficient used(eg: 0.6 when choose Combine_S_L)')
+                        help='Weight of each difficulty coefficient used(eg: 0.6 when choose Joint)')
     parser.add_argument('-th', '--threshold', type=float, default=1.0,
                         help='The threshold of competence function (Only for ablation study)')
     parser.add_argument('-rt', '--ratio', type=float, default=1.0,
