@@ -6,7 +6,7 @@ def main_train():
     parser = ArgumentParser('Molecule Property Prediction')
     parser.add_argument('-d', '--dataset', choices=['BACE', 'BBBP', 'ClinTox', 'HIV', 'Tox21',
                                                     'FreeSolv', 'Lipophilicity', 'ESOL', 'SIDER',
-                                                    'Clintox', 'Tox21', 'External'],
+                                                    'External'],
                         help='Dataset to use')
     parser.add_argument('-ep', '--external_path', default=None, type=str,
                         help='External dataset path (default: None)')
@@ -27,10 +27,10 @@ def main_train():
     parser.add_argument('-me', '--metric', choices=['roc_auc_score', 'pr_auc_score', 'r2', 'mae', 'rmse'],
                         default='roc_auc_score',
                         help='Metric for evaluation (default: roc_auc_score)')
-    # parser.add_argument('-n', '--num-epochs', type=int, default=100,
-    #                     help='Maximum number of epochs for training. '
-    #                          'We set a large number by default as early stopping '
-    #                          'will be performed. (default: 100)')
+    parser.add_argument('-n', '--num-epochs', type=int, default=100,
+                        help='Maximum number of epochs for training. '
+                             'We set a large number by default as early stopping '
+                             'will be performed. (default: 100)')
     parser.add_argument('-pe', '--print-every', type=int, default=50,
                         help='Print the training progress every X mini-batches')
     parser.add_argument('-rp', '--result-path', type=str, default='results',
@@ -46,9 +46,7 @@ def main_train():
                         help='Choose whether to use curriculum learning in training period')
     parser.add_argument('-dt', '--diff_type', type=str, choices=['AtomAndBond', 'Fsp3', 'MCE18',
                                                                  'LabelDistance',
-                                                                 'Combine_Structure',
                                                                  'Combine_S_L', 'Two_Stage',
-                                                                 'None',
                                                                  'Ablation'],
                         default='AtomAndBond', help='Calculation method of molecular difficulty coefficient to use')
     parser.add_argument('-wt', '--diff_weight', type=float, default=0.6,
