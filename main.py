@@ -19,8 +19,8 @@ def main_train():
     parser.add_argument('-p', '--pretrain', action='store_true',
                         help='Whether to skip the training and evaluate the pre-trained model '
                              'on the test set (default: False)')
-    parser.add_argument('-s', '--split', choices=['scaffold', 'random'], default='scaffold',
-                        help='Dataset splitting method (default: scaffold)')
+    parser.add_argument('-s', '--split', choices=['scaffold', 'random'], default='random',
+                        help='Dataset splitting method (default: random)')
     parser.add_argument('-sr', '--split-ratio', default='0.8,0.1,0.1', type=str,
                         help='Proportion of the dataset to use for training, validation and test, '
                              '(default: 0.8,0.1,0.1)')
