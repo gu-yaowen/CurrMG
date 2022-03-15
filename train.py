@@ -17,6 +17,20 @@ from model_config import set_model_config
 
 def train_iteration_Curr(args, model, train_data_loader, val_data_loader,
                          loss_criterion, optimizer):
+    """
+    Model training function using CurrMG.
+    Args:
+        model: Selected graph leaerning model.
+        train_data_loader: Training set data loader.
+        val_data_loader: Validating set data loader.
+        loss_criterion: Loss function based on selected task type.
+        optimizer: Optimizer.
+    Returns:
+        best_model: Best model on validating set.
+        best_score: Best performance result on validating set.
+        loss_list: Loss value for each training iteration.
+        val_list: Performance result for each training iteration.
+    """
     model.train()
     best_model = model
     best_score = 0 if args['metric'] in ['roc_auc_score', 'pr_auc_score', 'r2'] else 999
@@ -58,6 +72,20 @@ def train_iteration_Curr(args, model, train_data_loader, val_data_loader,
 
 def train_iteration_noCurr(args, model, train_data_loader, val_data_loader,
                            loss_criterion, optimizer):
+    """
+    Model training function without using CurrMG.
+    Args:
+        model: Selected graph leaerning model.
+        train_data_loader: Training set data loader.
+        val_data_loader: Validating set data loader.
+        loss_criterion: Loss function based on selected task type.
+        optimizer: Optimizer.
+    Returns:
+        best_model: Best model on validating set.
+        best_score: Best performance result on validating set.
+        loss_list: Loss value for each training iteration.
+        val_list: Performance result for each training iteration.
+    """
     model.train()
     best_model = model
     best_score = 0 if args['metric'] in ['roc_auc_score', 'pr_auc_score', 'r2'] else 999
@@ -105,6 +133,14 @@ def train_iteration_noCurr(args, model, train_data_loader, val_data_loader,
 
 
 def eval_iteration(args, model, data_loader):
+    """
+    Model evaluation function.
+    Args:
+        model: Selected graph leaerning model.
+        data_loader: Validating set data loader or test set data loader.
+    Returns:
+        Performance results.
+    """
     predict_all = []
     model.eval()
     eval_meter = Meter()
@@ -123,6 +159,9 @@ def eval_iteration(args, model, data_loader):
 
 
 def train(args):
+    """
+    Overall model training process.
+    """
     if torch.cuda.is_available():
         args['device'] = torch.device('cuda:' + args['cuda_id'].split(' ')[0])
     else:
@@ -147,7 +186,7 @@ def train(args):
     diff_feat = cal_diff_feat(args, dataset, train_set)
     if not args['is_Curr'] and args['threshold'] != 1.0:
         _, diff = diff_metric_get(args, diff_feat)
-        if args['diff_type'] == 'Two_Stage':
+        if args['diff_type'] == 'Two_stage':
             diff = diff[0]
         train_idx = np.where(diff < args['threshold'])[0]
         train_set = tuple(np.array(list(train_set))
@@ -184,6 +223,7 @@ def train(args):
     print('-' * 20 + '+' * 20 + '-' * 20)
     print('val {} {:.4f}'.format(args['metric'], best_score))
     print('test {} {:.4f}'.format(args['metric'], test_score))
+    torch.save(best_model, os.path.join(args['result_path'], 'models.pth'))
     test_result = np.array(test_result).reshape(len(test_set.indices), args['n_tasks'])
     label = dataset.labels.numpy().squeeze()[test_set.indices].reshape(len(test_set.indices), args['n_tasks'])
     smiles = np.array(dataset.smiles)[test_set.indices].reshape(len(test_set.indices), 1)

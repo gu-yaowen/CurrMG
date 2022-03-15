@@ -9,7 +9,37 @@ from utils import load_model, predict, criterion
 from dgllife.utils import RandomSplitter
 
 
+def cal_diff_feat(args, dataset, train_set):
+    """
+    Calculate difficulty coefficients for training set based on selected difficulty measurer.
+    Args:
+        dataset: The whole dataset.
+        train_set: The training set.
+    Returns:
+        The numpy array of difficulty coefficients for training set.
+    """
+    smiles = np.array(dataset.smiles)[train_set.indices]
+    label = dataset.labels.numpy().squeeze()[train_set.indices]
+    diff_feat = []
+    if args['diff_type'] in ['LabelDistance', 'Joint', 'Two_stage']:
+        pred = train4LabelDistance(args, train_set)
+    else:
+        pred = [None] * len(smiles)
+    print('Difficult Calculate Method: ', args['diff_type'])
+    for idx in range(len(smiles)):
+        diff = Feat_Calculate(smiles[idx], args['diff_type'], label[idx], pred[idx])
+        diff_feat.append(diff.diff_feat)
+    return np.array(diff_feat)
+
+
 def train4LabelDistance(args, train_set):
+    """
+    Acquire the predictions of training set which is used in d_LabelDistance difficulty measurer.
+    Args:
+        train_set: The training set.
+    Returns:
+        The prediction results of k teacher models.
+    """
     from load_data import load_data
     from train import eval_iteration
     print('LabelDistance Training...')
@@ -61,9 +91,7 @@ def read_smiles(smi):
     """
     Read SMILES from the input file.
     Args:
-        smi: str,
-        The SMILES of the string
-
+        smi: The SMILES of the string
     Returns:
         The rdkit rdMol object based on the input SMILES.
     """
@@ -76,15 +104,14 @@ def read_smiles(smi):
 class Feat_Calculate:
     def __init__(self, smiles, curr_option, label, pred):
         """
-        Input rdkit mol object and the feature calculation option
+        Input SMILES strings and the difficulty coefficient calculation option
         Args:
-            extra: float or None
-                The extra feature to be calculated for the difficulty.
-            mol: rdkit.Mol object
-                The mol whose feature to be calculated.
-            curr_option: str, The option for the Curr_learning, choice
-                from [AtomAndBond, Fsp3Ring, MCE18, LabelDistance, Combine]
+            smiles: The SMILES whose difficulty coefficient to be calculated.
+            curr_option: The option for the Curr_learning, choice
+                from [AtomAndBond, Fsp3, MCE18, LabelDistance, Joint, Two_Stage]
                 The string of the choice for the feature calculation
+            label: The true label of training set for d_LabelDistance.
+            pred: The predictions of training set for d_LabelDistance.
         """
         self.mol = read_smiles(smiles)
         self.label = label
@@ -100,11 +127,7 @@ class Feat_Calculate:
             self.label = label
             self.pred = pred
             self.diff_feat = self.calculate_LabelDistance()
-        elif self.curr_option == 'Combine_Structure':
-            self.diff_feat = [self.calculate_atom_and_bond(),
-                              self.calculate_sp3idx(),
-                              self.calculate_MCE18()]
-        elif self.curr_option in ['Joint', 'Two_Stage']:
+        elif self.curr_option in ['Joint', 'Two_stage']:
             self.diff_feat = [self.calculate_atom_and_bond(),
                               self.calculate_sp3idx(),
                               self.calculate_MCE18(),
@@ -120,15 +143,15 @@ class Feat_Calculate:
         """
         Calculate the summation of the atom number and bond number
         Returns:
-
+            The difficulty coefficient calculated by d_AtomAndBond.
         """
         return self.mol.GetNumAtoms() + self.mol.GetNumBonds()
 
     def calculate_sp3idx(self):
         """
-        Calculate the summation of the atom number and bond number
+        Calculate the content of sp3 carbon atoms in the molecule.
         Returns:
-
+            The difficulty coefficient calculated by d_Fsp3.
         """
         n_carbon = 0
         n_sp3ring = 0
@@ -144,18 +167,16 @@ class Feat_Calculate:
 
     def calculate_chiral(self):
         """
-        Calculate the number of the chiral center of the molecule.
-        Returns:
-
+        Calculate the number of the chiral center of the molecule
+        for the calculation of d_MCE18.
         """
         Chem.AssignStereochemistry(self.mol, flagPossibleStereoCenters=True)
         return rdMolDescriptors.CalcNumAtomStereoCenters(self.mol)
 
     def calculate_fsp3ring(self):
         """
-        Calculate the Fsp3 ration in all the rings in the molecule.
-        Returns:
-
+        Calculate the Fsp3 ration in all the rings in the molecule
+        for the calculation of d_MCE18.
         """
         ring_atoms = [i for ring in self.mol.GetRingInfo().AtomRings() for i in ring]
         n_carbon = 0
@@ -175,7 +196,7 @@ class Feat_Calculate:
         """
         Calculate the MCE18 score, which is the measure of the complexity.
         Returns:
-
+            The difficulty coefficient calculated by d_MCE18.
         """
         QINDEX = 3 + sum((atom.GetDegree() ** 2) / 2 - 2 for atom in self.mol.GetAtoms())
         FSP3 = rdMolDescriptors.CalcFractionCSP3(self.mol)
@@ -192,7 +213,7 @@ class Feat_Calculate:
         Calculate the L1 distance of predict value and true label in train set,
         which is the measure of the complexity.
         Returns:
-
+            The difficulty coefficient calculated by d_LabelDistance.
         """
         if type(self.pred) == np.ndarray or type(self.pred) != np.float64:
             return (np.array(self.pred) - np.array(self.label)).mean(axis=0)
@@ -201,12 +222,12 @@ class Feat_Calculate:
 
 def diff_metric_get(args, diff_count):
     """
-    To get the difficulty metric of the difficulty metric
+    To get the normalized difficulty coefficients and the sort of training set.
     Args:
-        diff_count: The array of the difficulty score of the
-
+        diff_count: The array of the difficulty coefficients of the training set.
     Returns:
-
+        sort: A sort of training set based on its difficulty coefficients.
+        cdf: normalized difficulty coefficients.
     """
     if args['diff_type'] == 'Joint':
         diff_count = np.stack(diff_count)
@@ -223,17 +244,23 @@ def diff_metric_get(args, diff_count):
             #                      for count in diff_count[:, i]]))
             count += 1
         cdf = np.array(cdf).T
-        cdf = np.array([weight * (0.3 * i[0] + 0.2 * i[1] + 0.5 * i[2]) +
+        if args['diff_type'] == 'Joint':
+            cdf = np.array([weight * (0.3 * i[0] + 0.2 * i[1] + 0.5 * i[2]) +
                             (1 - weight) * i[3]
                             for i in cdf])
-        cdf = np.array([(i - cdf.min()) /
+            cdf = np.array([(i - cdf.min()) /
+                            (cdf.max() - cdf.min()) for i in cdf])
+        else:
+            cdf = np.array([0.3 * i[0] + 0.2 * i[1] + 0.5 * i[2]
+                            for i in cdf])
+            cdf = np.array([(i - cdf.min()) /
                             (cdf.max() - cdf.min()) for i in cdf])
         sort = cdf.argsort()
         return sort, cdf
-
-    elif args['diff_type'] == 'Two_Stage':
+    elif args['diff_type'] == 'Two_stage':
         diff_count = np.stack(diff_count)
         cdf = []
+        weight = args['diff_weight']
         count = 0
         for i in range(len(diff_count[0])):
             cdf.append(np.array([len(np.where(
@@ -254,7 +281,6 @@ def diff_metric_get(args, diff_count):
         return [sort1, sort2], [cdf1, cdf2]
     else:
         sort = diff_count.argsort()
-        # diff_count = diff_count[diff_count.argsort()]
         cdf = np.array([len(np.where(diff_count < count)[0]) /
                         len(diff_count) for count in diff_count])
         # for ablation study to use
@@ -266,6 +292,17 @@ def diff_metric_get(args, diff_count):
 
 def competence_func(t_step: int, t_total: int, c0: float,
                     c_type: float, threshold=1.0):
+    """
+    The competence-based training scheduler.
+        Args:
+            t_step: The current training iteration t.
+            t_total: Total training iterations T.
+            c0: Initial competence value.
+            c_type: The power of the number in competence function.
+            threshold: only for ablation study.
+        Returns:
+            Current competence value.
+    """
     competence = pow((1 - c0 ** c_type) * (t_step / t_total) + c0 ** c_type, 1 / c_type)
     if competence > threshold:
         competence = threshold
@@ -274,7 +311,7 @@ def competence_func(t_step: int, t_total: int, c0: float,
 
 class CurrSampler(Sampler):
     """
-    The sampler based on the CurrLearning.
+    The sampler based on the CurrMG.
     """
 
     def __init__(self, args, diff_feat):
@@ -290,20 +327,22 @@ class CurrSampler(Sampler):
 
 
 class CurrBatchSampler(Sampler):
-    r"""The batch sampler for the data sample"""
+    """
+    The batch sampler for the data sample in CurrMG.
+    """
 
     def __init__(self, sampler, batch_size, t_total,
                  c_type, sample_type, threshold=1.0):
         """
-
         Args:
             sampler: torch.utils.data.Sampler,
             The defined Sampler for the data sample, return the
-            batch_size:
-            t_total:
-            c0:
-            c_type:
-            random_state:
+            batch_size: Batch size.
+            t_total: Total training iterations T.
+            c_type: The power of the number in competence function.
+            sample_type: 'Random' or 'Padding-like' sampling type
+            ('Random' is used in our manuscript).
+            threshold: only for ablation study.
         """
         self.sampler = sampler
         self.batch_size = batch_size
@@ -341,7 +380,6 @@ class CurrBatchSampler(Sampler):
                     sample_pool = list(np.where(self.cdf[0] <= c)[0])
                     sample_all = Random_batch(sample_pool,
                                               self.batch_size)
-                # elif t < int(self.t_total * 0.8):
                 else:
                     self.c0 = self.cdf[1][np.argpartition(self.cdf[1], self.batch_size - 1)[self.batch_size]]
                     c = competence_func(t, int(self.t_total * 0.4),
@@ -349,12 +387,6 @@ class CurrBatchSampler(Sampler):
                     sample_pool = list(np.where(self.cdf[1] <= c)[0])
                     sample_all = Random_batch(sample_pool,
                                               self.batch_size)
-                # else:
-                #     sample_count = np.zeros(len(self.indices[0]))
-                #     sample_all, sample_count = PaddingLike_batch(self.indices[0],
-                #                                                  sample_count,
-                #                                                  self.batch_size)
-            # print(len(sample_pool))
             yield sample_all.tolist()
 
     def __len__(self):
@@ -362,10 +394,16 @@ class CurrBatchSampler(Sampler):
 
 
 def Random_batch(sample_pool, batch_size):
+    """
+    The 'Random' sampling type.
+    """
     return np.random.choice(sample_pool, size=batch_size, replace=False)
 
 
 def PaddingLike_batch(sample_pool, sample_count, batch_size):
+    """
+    The 'Padding-like' sampling type.
+    """
     sample_all = np.argpartition(sample_count[sample_pool],
                                  batch_size - 1)[:batch_size]
     sample_count[sample_all] += 1

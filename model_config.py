@@ -1,7 +1,3 @@
-import json
-import os
-
-
 def set_model_config(args):
     if args['model'] == 'gin_supervised_contextpred':
         config = {

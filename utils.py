@@ -341,6 +341,9 @@ def plot_result(args, label, predict, score):
 
 
 def set_seed(args):
+    """
+    Set of random seed.
+    """
     seed = args['seed']
     random.seed(seed)
     np.random.seed(seed)
@@ -350,6 +353,9 @@ def set_seed(args):
 
 
 def criterion(args):
+    """
+    Set of task type.
+    """
     if args['mode'] == 'classification':
         return nn.BCEWithLogitsLoss(reduction='none')
     elif args['mode'] == 'regression':

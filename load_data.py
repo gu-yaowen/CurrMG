@@ -5,7 +5,6 @@ from dgllife.data import FreeSolv, Lipophilicity, ESOL, \
     BBBP, BACE, ClinTox, HIV, Tox21, SIDER
 from functools import partial
 from dgllife.utils import smiles_to_bigraph
-from train_sampler import Feat_Calculate
 from dgllife.data.csv_dataset import MoleculeCSVDataset
 from torch.utils.data import DataLoader
 from utils import collate_molgraphs
@@ -13,6 +12,13 @@ from train_sampler import CurrSampler, CurrBatchSampler
 
 
 def load_data_from_dgl(args):
+    """
+    Load molecular property prediction datasets. In there, some pre-prepared datasets
+    have been sotred in DGL-life. Note that once you want to use your own External Dataset,
+    please follow the file format as those in "test" folder.
+    Returns:
+        A dgl-type dataset.
+    """
     if args['dataset'] == 'FreeSolv':
         dataset = FreeSolv(smiles_to_graph=partial(smiles_to_bigraph, add_self_loop=True),
                            node_featurizer=args['node_featurizer'],
@@ -90,24 +96,18 @@ def load_data_from_dgl(args):
     return dataset
 
 
-def cal_diff_feat(args, dataset, train_set):
-    smiles = np.array(dataset.smiles)[train_set.indices]
-    label = dataset.labels.numpy().squeeze()[train_set.indices]
-    diff_feat = []
-    if args['diff_type'] in ['LabelDistance', 'Combine_S_L', 'Two_Stage']:
-        from train_sampler import train4LabelDistance
-        pred = train4LabelDistance(args, train_set)
-    else:
-        pred = [None] * len(smiles)
-    print('Difficult Calculate Method: ', args['diff_type'])
-    for idx in range(len(smiles)):
-        diff = Feat_Calculate(smiles[idx], args['diff_type'], label[idx], pred[idx])
-        diff_feat.append(diff.diff_feat)
-    return np.array(diff_feat)
-
-
 def load_data(args, train_set, val_set, test_set,
               diff_feat: np.array):
+    """
+    Build data loader for model training.
+    Args:
+        train_set: The training set.
+        val_set: The validating set.
+        test_set: The test set.
+        diff_feat: Difficulty coefficients for training set.
+    Returns:
+        The training set data loader, validating data loader, and test data loader.
+    """
     if args['is_Curr']:
         print('Training Method in Curriculum Learning')
         sampler = CurrSampler(args, diff_feat)
