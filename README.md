@@ -1,7 +1,7 @@
 # CurrMG
 Codes for "An efficient curriculum learning-based strategy for molecular graph learning"
 # Reference
-If you make advantage of the MODDA model or use the datasets released in our paper, please cite the following in your manuscript:
+If you make advantage of the CurrMG training strategy proposed in our paper, please cite the following in your manuscript:
 
 TBD
 # Overview
