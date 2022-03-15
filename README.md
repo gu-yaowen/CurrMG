@@ -18,13 +18,13 @@ TBD
         -mo: GCN GAT MPNN AttentiveFP Pretrained-GIN
         -me: roc_auc_score pr_auc_score r2 mae rmse
         -dt: AtomAndBond Fsp3 MCE18 LabelDistance Joint Two_stage
-    Optional arguments
+    Optional arguments:
         -s: Random or scaffold splitting type.
         -sr: Split ratio.
         -wt: Weight of difficulty coefficient for d_Joint and d_Two_stage.
         -ct: Power of competence function.
         -ne: Epoches. -lr: Learning rate. -bs: Batch Size. -wd: Weight decay.
-    Find more arguments, please see main.py
+    For more arguments, please see main.py
 ## Sample data
 Once you want to use your own dataset, please follow the file format as ``JAK2.csv`` and ``Mtb.csv`` in 'test' folder.
 # Contact
