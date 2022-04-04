@@ -3,7 +3,17 @@ Codes for "An efficient curriculum learning-based strategy for molecular graph l
 # Reference
 If you make advantage of the CurrMG training strategy proposed in our paper, please cite the following in your manuscript:
 
-TBD
+```
+@article{10.1093/bib/bbac099,
+author = {Gu, Yaowen and Zheng, Si and Xu, Zidu and Yin, Qijin and Li, Liang and Li, Jiao},
+title = "{An efficient curriculum learning-based strategy for molecular graph learning}",
+journal = {Briefings in Bioinformatics},
+year = {2022},
+month = {04},
+issn = {1477-4054},
+doi = {10.1093/bib/bbac099},
+}
+```
 # Overview
 ![CurrMG](https://github.com/gu-yaowen/CurrMG/blob/main/overview.png)
 ## Environment Requirement
