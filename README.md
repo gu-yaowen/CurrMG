@@ -1,4 +1,7 @@
 # CurrMG
+![Visits Badge](https://img.shields.io/badge/dynamic/json?label=visits&query=$.message&color=blue&url=https://hits.dwyl.com/gu-yaowen/CurrMG.json)
+![Downloads](https://img.shields.io/github/downloads/gu-yaowen/CurrMG/total.svg)
+
 Codes for "An efficient curriculum learning-based strategy for molecular graph learning"
 # Reference
 If you make advantage of the CurrMG training strategy proposed in our paper, please cite the following in your manuscript:
